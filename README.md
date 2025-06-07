@@ -45,7 +45,7 @@ python trainModels.py
 
 ### 3. Run semi-supervised decision tree:
 ```bash
-python semiSupervised_dt.py
+python semiSupervisedDT.py
 ```
 
 ### 4. Generate comparison graphs:

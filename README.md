@@ -20,8 +20,8 @@ We implemented and evaluated the following models:
 
 ```
 ├── resizeImages.py                # Image loading, resizing, preprocessing
-├── train_models.py                # Train and evaluate SVM & Random Forest
-├── semi_supervised_dt.py         # Semi-supervised Decision Tree implementation
+├── trainModels.py                # Train and evaluate SVM & Random Forest
+├── semiSupervisedDT.py         # Semi-supervised Decision Tree implementation
 ├── produceResultsOfComparision.py# Accuracy & F1 bar charts
 ├── X_preprocessed.npy            # Preprocessed image features
 ├── y_labels.npy                  # Corresponding labels
@@ -40,12 +40,12 @@ python resizeImages.py
 
 ### 2. Train and evaluate supervised models:
 ```bash
-python train_models.py
+python trainModels.py
 ```
 
 ### 3. Run semi-supervised decision tree:
 ```bash
-python semi_supervised_dt.py
+python semiSupervised_dt.py
 ```
 
 ### 4. Generate comparison graphs:

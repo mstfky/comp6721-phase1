@@ -20,13 +20,13 @@ We implemented and evaluated the following models:
 
 ```
 ├── resizeImages.py                # Image loading, resizing, preprocessing
-├── trainModels.py                # Train and evaluate SVM & Random Forest
-├── semiSupervisedDT.py         # Semi-supervised Decision Tree implementation
-├── produceResultsOfComparision.py# Accuracy & F1 bar charts
-├── X_preprocessed.npy            # Preprocessed image features
-├── y_labels.npy                  # Corresponding labels
-├── model_accuracy_comparison.png # Plot comparing model accuracies
-├── model_f1_comparison.png       # Plot comparing F1 scores
+├── trainModels.py                 # Train and evaluate SVM & Random Forest
+├── semiSupervisedDT.py            # Semi-supervised Decision Tree implementation
+├── produceResultsOfComparision.py # Accuracy & F1 bar charts
+├── X_preprocessed.npy             # Preprocessed image features
+├── y_labels.npy                   # Corresponding labels
+├── model_accuracy_comparison.png  # Plot comparing model accuracies
+├── model_f1_comparison.png        # Plot comparing F1 scores
 ```
 
 ---

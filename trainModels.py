@@ -80,3 +80,23 @@ print("Random Forest Classification Report:")
 print(classification_report(y_test, rf_preds))
 print("Random Forest Confusion Matrix:")
 print(confusion_matrix(y_test, rf_preds))
+
+# --- Extract final results for plotting ---
+final_results = {
+    "SVM": {
+        "accuracy": accuracy_score(y_test, svm_preds),
+        "f1": f1_score(y_test, svm_preds, average='macro')
+    },
+    "Random Forest": {
+        "accuracy": accuracy_score(y_test, rf_preds),
+        "f1": f1_score(y_test, rf_preds, average='macro')
+    }
+}
+
+# Optional: Save results to .npy file for plotting script
+np.save("final_model_results.npy", final_results)
+
+# Or just print them to copy into your plotting script if preferred
+print("\n✅ Final Scores Summary:")
+for model_name, scores in final_results.items():
+    print(f"{model_name}: Accuracy = {scores['accuracy']:.4f}, F1 = {scores['f1']:.4f}")

@@ -64,3 +64,25 @@ print("\n Final Evaluation on Test Set:")
 print(classification_report(y_test, final_preds))
 print("Confusion Matrix:")
 print(confusion_matrix(y_test, final_preds))
+
+from sklearn.metrics import accuracy_score, f1_score
+
+# Extract metrics
+dt_accuracy = accuracy_score(y_test, final_preds)
+dt_f1 = f1_score(y_test, final_preds, average='macro')
+
+# Store results for plotting
+semi_supervised_results = {
+    "Semi-Supervised DT": {
+        "accuracy": dt_accuracy,
+        "f1": dt_f1
+    }
+}
+
+# Save to .npy file
+np.save("semi_supervised_results.npy", semi_supervised_results)
+
+# Print summary
+print("\n✅ Final Scores Summary (Semi-Supervised DT):")
+print(f"Accuracy = {dt_accuracy:.4f}")
+print(f"Macro F1-Score = {dt_f1:.4f}")

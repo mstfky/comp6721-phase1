@@ -22,7 +22,7 @@ print(f"Unlabeled size: {len(y_unlabeled_true)}")
 dt = DecisionTreeClassifier()
 
 # Start iterations
-for i in range(10):
+for i in range(10): #Optional safety limit "while True"
     print(f"\n Iteration {i+1}")
 
     # Train on labeled data

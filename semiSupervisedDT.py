@@ -1,88 +1,109 @@
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.decomposition import PCA
 
 # Load preprocessed data
 X = np.load("X_preprocessed.npy")
 y = np.load("y_labels.npy")
 
-# Final test set (same as before)
-X_temp, X_test, y_temp, y_test = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+# Split into temp + test sets (60% temp, 40% test)
+X_temp, X_test, y_temp, y_test = train_test_split(
+    X, y, test_size=0.4, stratify=y, random_state=42
+)
 
-# Among remaining, split into 20% labeled, 80% unlabeled
+# Use 50% labeled to start
 X_labeled, X_unlabeled, y_labeled, y_unlabeled_true = train_test_split(
-    X_temp, y_temp, test_size=0.8, stratify=y_temp, random_state=42
+    X_temp, y_temp, test_size=0.5, stratify=y_temp, random_state=42
 )
 
 print(f"Initial labeled size: {len(y_labeled)}")
-print(f"Unlabeled size: {len(y_unlabeled_true)}")
+print(f"Initial unlabeled size: {len(y_unlabeled_true)}")
 
-# Initialize Decision Tree
-dt = DecisionTreeClassifier()
+# Scale features
+scaler = StandardScaler()
+X_labeled = scaler.fit_transform(X_labeled)
+X_unlabeled = scaler.transform(X_unlabeled)
+X_test_scaled = scaler.transform(X_test)
 
-# Start iterations
-for i in range(10): #Optional safety limit "while True"
-    print(f"\n Iteration {i+1}")
+# Optional: PCA to reduce noise / dimensionality
+pca = PCA(n_components=8)
+X_labeled = pca.fit_transform(X_labeled)
+X_unlabeled = pca.transform(X_unlabeled)
+X_test_scaled = pca.transform(X_test_scaled)
 
-    # Train on labeled data
-    dt.fit(X_labeled, y_labeled)
+# Stronger model
+model = GradientBoostingClassifier(n_estimators=300, max_depth=5, random_state=42)
 
-    # Predict on unlabeled
-    probs = dt.predict_proba(X_unlabeled)
-    preds = dt.predict(X_unlabeled)
+confidence_threshold = 0.8
+threshold_decay = 0.995
+min_threshold = 0.6
+max_iter = 200
+
+best_acc = 0
+no_improve_count = 0
+early_stop_limit = 10
+
+for i in range(max_iter):
+    print(f"\nIteration {i+1} - Confidence Threshold: {confidence_threshold:.3f}")
+
+    model.fit(X_labeled, y_labeled)
+
+    final_preds = model.predict(X_test_scaled)
+    acc = accuracy_score(y_test, final_preds)
+    print(f"Test accuracy at iteration {i+1}: {acc:.4f}")
+
+    if acc > best_acc:
+        best_acc = acc
+        no_improve_count = 0
+    else:
+        no_improve_count += 1
+    if no_improve_count >= early_stop_limit:
+        print("Early stopping due to no improvement.")
+        break
+
+    probs = model.predict_proba(X_unlabeled)
+    preds = model.predict(X_unlabeled)
     confidences = np.max(probs, axis=1)
 
-    # High confidence threshold
-    high_confidence_mask = confidences >= 0.85
-    if not np.any(high_confidence_mask):
-        print(" No high-confidence predictions found. Stopping.")
-        break
+    high_conf_mask = confidences >= confidence_threshold
+    indices = np.where(high_conf_mask)[0]
 
-    # Add confident samples to labeled set
-    X_confident = X_unlabeled[high_confidence_mask]
-    y_confident = preds[high_confidence_mask]
+    if len(indices) == 0:
+        if confidence_threshold > min_threshold:
+            confidence_threshold = max(confidence_threshold - 0.05, min_threshold)
+            print(f"No confident samples, lowering threshold to {confidence_threshold:.2f} and continuing.")
+            continue
+        else:
+            print("No confident samples and threshold at minimum. Stopping semi-supervised learning.")
+            break
 
-    X_labeled = np.vstack([X_labeled, X_confident])
-    y_labeled = np.concatenate([y_labeled, y_confident])
+    X_labeled = np.vstack([X_labeled, X_unlabeled[indices]])
+    y_labeled = np.concatenate([y_labeled, preds[indices]])
 
-    # Remove added samples from unlabeled set
-    X_unlabeled = X_unlabeled[~high_confidence_mask]
+    X_unlabeled = np.delete(X_unlabeled, indices, axis=0)
 
-    print(f"Added {len(y_confident)} new samples. New labeled size: {len(y_labeled)}")
+    print(f"Added {len(indices)} samples; labeled set size is now {len(y_labeled)}")
+
+    confidence_threshold = max(confidence_threshold * threshold_decay, min_threshold)
 
     if len(X_unlabeled) == 0:
-        print(" All unlabeled samples have been processed.")
+        print("All unlabeled samples have been labeled.")
         break
 
-# Final model evaluation
-final_dt = DecisionTreeClassifier()
-final_dt.fit(X_labeled, y_labeled)
-final_preds = final_dt.predict(X_test)
-
-print("\n Final Evaluation on Test Set:")
+# Final evaluation
+final_preds = model.predict(X_test_scaled)
+acc = accuracy_score(y_test, final_preds)
+print(f"\nFinal accuracy on test set: {acc:.4f}")
 print(classification_report(y_test, final_preds))
-print("Confusion Matrix:")
+print("Confusion matrix:")
 print(confusion_matrix(y_test, final_preds))
 
-from sklearn.metrics import accuracy_score, f1_score
-
-# Extract metrics
-dt_accuracy = accuracy_score(y_test, final_preds)
-dt_f1 = f1_score(y_test, final_preds, average='macro')
-
-# Store results for plotting
-semi_supervised_results = {
-    "Semi-Supervised DT": {
-        "accuracy": dt_accuracy,
-        "f1": dt_f1
-    }
-}
-
-# Save to .npy file
-np.save("semi_supervised_results.npy", semi_supervised_results)
-
-# Print summary
-print("\n✅ Final Scores Summary (Semi-Supervised DT):")
-print(f"Accuracy = {dt_accuracy:.4f}")
-print(f"Macro F1-Score = {dt_f1:.4f}")
+with open("results.txt", "w") as f:
+    f.write(f"Final accuracy on test set: {acc:.4f}\n\n")
+    f.write("Classification Report:\n")
+    f.write(classification_report(y_test, final_preds))
+    f.write("\nConfusion Matrix:\n")
+    f.write(np.array2string(confusion_matrix(y_test, final_preds)))
